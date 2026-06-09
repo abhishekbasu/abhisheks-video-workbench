@@ -1,0 +1,85 @@
+- generic [ref=e21]:
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e27]:
+        - heading "🎬 Sora · Image → Video" [level=1] [ref=e28]
+        - paragraph [ref=e29]:
+          - text: A frontend for the OpenAI
+          - strong [ref=e30]: Sora
+          - text: Videos API — generate (text- or image-to-video), extend, remix, edit, and reuse characters. Sora is paid & async; a clip takes a few minutes (longer for
+          - code [ref=e31]: sora-2-pro
+          - text: ).
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - button [ref=e35] [cursor=pointer]: Generate
+            - button [ref=e36] [cursor=pointer]: Extend / Remix / Edit
+            - button [ref=e37] [cursor=pointer]: Characters
+          - tablist [ref=e38]:
+            - tab "Generate" [ref=e39] [cursor=pointer]
+            - tab "Extend / Remix / Edit" [active] [selected] [ref=e40] [cursor=pointer]
+            - tab "Characters" [ref=e41] [cursor=pointer]
+        - tabpanel [ref=e164]:
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - generic [ref=e168]:
+                - group [ref=e169]:
+                  - generic [ref=e170]: Operation
+                  - generic [ref=e171]: extend = +seconds continuation · remix = variation · edit = prompt-edit
+                  - generic [ref=e172]:
+                    - generic [ref=e173] [cursor=pointer]:
+                      - radio "extend" [checked] [ref=e174]
+                      - generic [ref=e175]: extend
+                    - generic [ref=e176] [cursor=pointer]:
+                      - radio "remix" [ref=e177]
+                      - generic [ref=e178]: remix
+                    - generic [ref=e179] [cursor=pointer]:
+                      - radio "edit" [ref=e180]
+                      - generic [ref=e181]: edit
+                - generic [ref=e183]:
+                  - generic [ref=e184]: Source video id
+                  - textbox "Source video id" [ref=e186]:
+                    - /placeholder: video_…
+                - generic [ref=e188]:
+                  - generic [ref=e189]: Prompt
+                  - textbox "Prompt" [ref=e191]:
+                    - /placeholder: ""
+                - group [ref=e192]:
+                  - generic [ref=e193]: Seconds (extend only)
+                  - generic [ref=e194]:
+                    - generic [ref=e195] [cursor=pointer]:
+                      - radio "4" [ref=e196]
+                      - generic [ref=e197]: "4"
+                    - generic [ref=e198] [cursor=pointer]:
+                      - radio "8" [checked] [ref=e199]
+                      - generic [ref=e200]: "8"
+                    - generic [ref=e201] [cursor=pointer]:
+                      - radio "12" [ref=e202]
+                      - generic [ref=e203]: "12"
+              - button "Run" [ref=e204] [cursor=pointer]
+            - generic [ref=e205]:
+              - paragraph [ref=e210]: Idle.
+              - generic [ref=e211]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Result
+                - generic "Empty value" [ref=e212]:
+                  - img [ref=e214]
+              - generic [ref=e219]:
+                - generic [ref=e220]: New video id
+                - textbox "New video id" [disabled] [ref=e222]:
+                  - /placeholder: ""
+  - contentinfo "Gradio footer navigation" [ref=e155]:
+    - button "Use via API logo" [ref=e156] [cursor=pointer]:
+      - text: Use via API
+      - img "logo" [ref=e157]
+    - generic [ref=e158]: ·
+    - link "Built with Gradio logo" [ref=e159] [cursor=pointer]:
+      - /url: https://gradio.app
+      - text: Built with Gradio
+      - img "logo" [ref=e160]
+    - generic [ref=e161]: ·
+    - button "Settings Settings" [ref=e162] [cursor=pointer]:
+      - text: Settings
+      - img "Settings" [ref=e163]

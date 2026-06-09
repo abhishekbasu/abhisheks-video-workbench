@@ -1,0 +1,129 @@
+- generic [ref=e21]:
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e27]:
+        - heading "🎬 Sora · Image → Video" [level=1] [ref=e28]
+        - paragraph [ref=e29]:
+          - text: A frontend for the OpenAI
+          - strong [ref=e30]: Sora
+          - text: Videos API — generate (text- or image-to-video), extend, remix, edit, and reuse characters. Sora is paid & async; a clip takes a few minutes (longer for
+          - code [ref=e31]: sora-2-pro
+          - text: ).
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - button [ref=e35] [cursor=pointer]: Generate
+            - button [ref=e36] [cursor=pointer]: Extend / Remix / Edit
+            - button [ref=e37] [cursor=pointer]: Characters
+          - tablist [ref=e38]:
+            - tab "Generate" [selected] [ref=e39] [cursor=pointer]
+            - tab "Extend / Remix / Edit" [ref=e40] [cursor=pointer]
+            - tab "Characters" [ref=e41] [cursor=pointer]
+        - tabpanel [ref=e42]:
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Seed image (optional — leave empty for text-to-video)
+                - generic [ref=e47]:
+                  - button "Drop an image file here to upload" [ref=e50] [cursor=pointer]:
+                    - generic [ref=e51]:
+                      - img [ref=e53]
+                      - text: Drop Image Here
+                      - generic [ref=e56]: "- or -"
+                      - text: Click to Upload
+                  - generic [ref=e57]:
+                    - button "Upload file" [ref=e58] [cursor=pointer]:
+                      - img [ref=e59]
+                    - button "Capture from camera" [ref=e62] [cursor=pointer]:
+                      - img [ref=e63]
+                    - button "Paste from clipboard" [ref=e66] [cursor=pointer]:
+                      - img [ref=e67]
+              - generic [ref=e71]:
+                - generic [ref=e72]: Prompt
+                - textbox "Prompt" [ref=e74]:
+                  - /placeholder: Describe the motion/scene. One clear action; subtle motion.
+              - generic [ref=e76]:
+                - group [ref=e77]:
+                  - generic [ref=e78]: Model
+                  - generic [ref=e79]:
+                    - generic [ref=e80] [cursor=pointer]:
+                      - radio "sora-2" [checked] [ref=e81]
+                      - generic [ref=e82]: sora-2
+                    - generic [ref=e83] [cursor=pointer]:
+                      - radio "sora-2-pro" [ref=e84]
+                      - generic [ref=e85]: sora-2-pro
+                - group [ref=e86]:
+                  - generic [ref=e87]: Seconds
+                  - generic [ref=e88]:
+                    - generic [ref=e89] [cursor=pointer]:
+                      - radio "4" [ref=e90]
+                      - generic [ref=e91]: "4"
+                    - generic [ref=e92] [cursor=pointer]:
+                      - radio "8" [checked] [ref=e93]
+                      - generic [ref=e94]: "8"
+                    - generic [ref=e95] [cursor=pointer]:
+                      - radio "12" [ref=e96]
+                      - generic [ref=e97]: "12"
+              - generic [ref=e98]:
+                - generic [ref=e100]:
+                  - generic [ref=e101]: Size (must be supported by the model)
+                  - generic [ref=e104]:
+                    - listbox "Size (must be supported by the model)" [ref=e105]: 720x1280
+                    - generic:
+                      - img
+                - generic [ref=e107]:
+                  - generic [ref=e108]: Character ids (optional, comma-separated)
+                  - textbox "Character ids (optional, comma-separated)" [ref=e110]:
+                    - /placeholder: char_abc, char_def  — created in the Characters tab
+              - generic [ref=e112]:
+                - generic [ref=e114] [cursor=pointer]:
+                  - checkbox "Mute (strip audio — needs ffmpeg)" [ref=e115]
+                  - generic [ref=e116]: Mute (strip audio — needs ffmpeg)
+                - generic [ref=e118] [cursor=pointer]:
+                  - checkbox "Force fresh (ignore cache)" [ref=e119]
+                  - generic [ref=e120]: Force fresh (ignore cache)
+              - button "🎬 Generate" [ref=e121] [cursor=pointer]
+            - generic [ref=e122]:
+              - paragraph [ref=e127]: Idle.
+              - generic [ref=e128]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Result
+                - generic "Empty value" [ref=e129]:
+                  - img [ref=e131]
+              - generic [ref=e136]:
+                - generic [ref=e137]: Video id (paste into Extend / Remix / Edit)
+                - textbox "Video id (paste into Extend / Remix / Edit)" [disabled] [ref=e139]:
+                  - /placeholder: ""
+              - generic [ref=e140]:
+                - generic [ref=e141]:
+                  - generic:
+                    - generic:
+                      - img
+                    - text: Thumbnail
+                  - generic "Empty value" [ref=e142]:
+                    - img [ref=e144]
+                - generic [ref=e148]:
+                  - generic:
+                    - generic:
+                      - img
+                    - text: Spritesheet
+                  - generic "Empty value" [ref=e149]:
+                    - img [ref=e151]
+  - contentinfo "Gradio footer navigation" [ref=e155]:
+    - button "Use via API logo" [ref=e156] [cursor=pointer]:
+      - text: Use via API
+      - img "logo" [ref=e157]
+    - generic [ref=e158]: ·
+    - link "Built with Gradio logo" [ref=e159] [cursor=pointer]:
+      - /url: https://gradio.app
+      - text: Built with Gradio
+      - img "logo" [ref=e160]
+    - generic [ref=e161]: ·
+    - button "Settings Settings" [ref=e162] [cursor=pointer]:
+      - text: Settings
+      - img "Settings" [ref=e163]

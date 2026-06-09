@@ -1,0 +1,62 @@
+- generic [ref=e21]:
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e27]:
+        - heading "🎬 Sora · Image → Video" [level=1] [ref=e28]
+        - paragraph [ref=e29]:
+          - text: A frontend for the OpenAI
+          - strong [ref=e30]: Sora
+          - text: Videos API — generate (text- or image-to-video), extend, remix, edit, and reuse characters. Sora is paid & async; a clip takes a few minutes (longer for
+          - code [ref=e31]: sora-2-pro
+          - text: ).
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - button [ref=e35] [cursor=pointer]: Generate
+            - button [ref=e36] [cursor=pointer]: Extend / Remix / Edit
+            - button [ref=e37] [cursor=pointer]: Characters
+          - tablist [ref=e38]:
+            - tab "Generate" [ref=e39] [cursor=pointer]
+            - tab "Extend / Remix / Edit" [ref=e40] [cursor=pointer]
+            - tab "Characters" [active] [selected] [ref=e41] [cursor=pointer]
+        - tabpanel [ref=e223]:
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e227]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Clip to build the character from (mp4/mov/webm)
+                - button "Click to upload or drop files" [ref=e228] [cursor=pointer]:
+                  - generic [ref=e229]:
+                    - img [ref=e231]
+                    - text: Drop File Here
+                    - generic [ref=e234]: "- or -"
+                    - text: Click to Upload
+              - generic [ref=e237]:
+                - generic [ref=e238]: Character name
+                - textbox "Character name" [ref=e240]:
+                  - /placeholder: e.g. Alfie
+              - button "Create character" [ref=e241] [cursor=pointer]
+            - generic [ref=e242]:
+              - generic [ref=e246]:
+                - paragraph [ref=e247]: Upload a short clip of the subject; you'll get a reusable character id to reference in the Generate tab.
+                - paragraph [ref=e248]:
+                  - subscript [ref=e249]: "Note: character support in the create API is newer and may be gated on your account — if it errors, the message will say so."
+              - generic [ref=e252]:
+                - generic [ref=e253]: Character id
+                - textbox "Character id" [disabled] [ref=e255]:
+                  - /placeholder: ""
+  - contentinfo "Gradio footer navigation" [ref=e155]:
+    - button "Use via API logo" [ref=e156] [cursor=pointer]:
+      - text: Use via API
+      - img "logo" [ref=e157]
+    - generic [ref=e158]: ·
+    - link "Built with Gradio logo" [ref=e159] [cursor=pointer]:
+      - /url: https://gradio.app
+      - text: Built with Gradio
+      - img "logo" [ref=e160]
+    - generic [ref=e161]: ·
+    - button "Settings Settings" [ref=e162] [cursor=pointer]:
+      - text: Settings
+      - img "Settings" [ref=e163]

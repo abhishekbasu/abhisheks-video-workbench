@@ -1,0 +1,151 @@
+- generic [ref=e21]:
+  - main [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e27]:
+        - generic [ref=e28]: OpenAI Videos API · Sora
+        - heading "Sora—image & prompt → video" [level=1] [ref=e29]
+        - paragraph [ref=e30]:
+          - text: A focused frontend for generating, extending, remixing, and editing short Sora clips — with reusable characters across them. Sora is paid and async; a clip usually takes a few minutes (longer for
+          - code [ref=e31]: sora-2-pro
+          - text: ).
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - button [ref=e36] [cursor=pointer]: Generate
+            - button [ref=e37] [cursor=pointer]: Extend / Remix / Edit
+            - button [ref=e38] [cursor=pointer]: Characters
+          - tablist [ref=e39]:
+            - tab "Generate" [selected] [ref=e40] [cursor=pointer]
+            - tab "Extend / Remix / Edit" [ref=e41] [cursor=pointer]
+            - tab "Characters" [ref=e42] [cursor=pointer]
+        - tabpanel [ref=e43]:
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e50]: Source
+              - generic [ref=e52]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Seed image — optional, leave empty for text-to-video
+                - generic [ref=e53]:
+                  - button "Drop an image file here to upload" [ref=e56] [cursor=pointer]:
+                    - generic [ref=e57]:
+                      - img [ref=e59]
+                      - text: Drop Image Here
+                      - generic [ref=e62]: "- or -"
+                      - text: Click to Upload
+                  - generic [ref=e63]:
+                    - button "Upload file" [ref=e64] [cursor=pointer]:
+                      - img [ref=e65]
+                    - button "Capture from camera" [ref=e68] [cursor=pointer]:
+                      - img [ref=e69]
+                    - button "Paste from clipboard" [ref=e72] [cursor=pointer]:
+                      - img [ref=e73]
+              - generic [ref=e77]:
+                - generic [ref=e78]: Prompt
+                - generic [ref=e79]: Plain English. Avoid moderation triggers — see README.
+                - textbox "Prompt Plain English. Avoid moderation triggers — see README." [ref=e81]:
+                  - /placeholder: Describe the motion or scene. One clear action; subtle motion reads best.
+              - generic [ref=e85]: Generation
+              - generic [ref=e88]:
+                - group [ref=e89]:
+                  - generic [ref=e90]: Model
+                  - generic [ref=e91]:
+                    - generic [ref=e92] [cursor=pointer]:
+                      - radio "sora-2" [checked] [ref=e93]
+                      - generic [ref=e94]: sora-2
+                    - generic [ref=e95] [cursor=pointer]:
+                      - radio "sora-2-pro" [ref=e96]
+                      - generic [ref=e97]: sora-2-pro
+                - group [ref=e98]:
+                  - generic [ref=e99]: Seconds
+                  - generic [ref=e100]:
+                    - generic [ref=e101] [cursor=pointer]:
+                      - radio "4" [ref=e102]
+                      - generic [ref=e103]: "4"
+                    - generic [ref=e104] [cursor=pointer]:
+                      - radio "8" [checked] [ref=e105]
+                      - generic [ref=e106]: "8"
+                    - generic [ref=e107] [cursor=pointer]:
+                      - radio "12" [ref=e108]
+                      - generic [ref=e109]: "12"
+              - generic [ref=e112]:
+                - generic [ref=e113]: Size
+                - generic [ref=e114]: Must be supported by the chosen model — sora-2 is 720p-only.
+                - generic [ref=e117]:
+                  - listbox "Size" [ref=e118]: 720x1280
+                  - generic:
+                    - img
+              - generic [ref=e122]: Advanced
+              - generic [ref=e126]:
+                - generic [ref=e127]: Character ids — optional
+                - generic [ref=e128]: Comma-separated. Build characters in the Characters tab.
+                - textbox "Character ids — optional Comma-separated. Build characters in the Characters tab." [ref=e130]:
+                  - /placeholder: char_abc, char_def
+              - generic [ref=e132]:
+                - generic [ref=e133]:
+                  - generic [ref=e134] [cursor=pointer]:
+                    - checkbox "Mute output" [ref=e135]
+                    - generic [ref=e136]: Mute output
+                  - generic [ref=e137]: Strip audio — needs ffmpeg on PATH.
+                - generic [ref=e138]:
+                  - generic [ref=e139] [cursor=pointer]:
+                    - checkbox "Force fresh" [ref=e140]
+                    - generic [ref=e141]: Force fresh
+                  - generic [ref=e142]: Ignore the resume cache.
+              - button "Generate" [ref=e143] [cursor=pointer]
+            - generic [ref=e144]:
+              - generic [ref=e149]:
+                - generic [ref=e150]: Result
+                - generic [ref=e151]: Your clip will appear here.
+                - paragraph [ref=e152]:
+                  - text: Write a prompt — optionally seed it with an image — and press
+                  - strong [ref=e153]: Generate
+                  - text: . The finished clip, its thumbnail, spritesheet, and a
+                  - code [ref=e154]: video id
+                  - text: for follow-up operations land in this column.
+                - paragraph [ref=e155]:
+                  - text: "Typical wait: 2–4 minutes for"
+                  - code [ref=e156]: sora-2
+                  - text: ", longer for"
+                  - code [ref=e157]: sora-2-pro
+                  - text: . Re-runs of the same request resume the in-flight job instead of paying again.
+              - generic [ref=e158]:
+                - generic:
+                  - generic:
+                    - img
+                  - text: Result
+                - generic "Empty value" [ref=e159]:
+                  - img [ref=e161]
+              - generic [ref=e166]:
+                - generic [ref=e167]: Video id — paste into Extend / Remix / Edit
+                - textbox "Video id — paste into Extend / Remix / Edit" [disabled] [ref=e169]:
+                  - /placeholder: ""
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic:
+                    - generic:
+                      - img
+                    - text: Thumbnail
+                  - generic "Empty value" [ref=e172]:
+                    - img [ref=e174]
+                - generic [ref=e178]:
+                  - generic:
+                    - generic:
+                      - img
+                    - text: Spritesheet
+                  - generic "Empty value" [ref=e179]:
+                    - img [ref=e181]
+  - contentinfo "Gradio footer navigation" [ref=e185]:
+    - button "Use via API logo" [ref=e186] [cursor=pointer]:
+      - text: Use via API
+      - img "logo" [ref=e187]
+    - generic [ref=e188]: ·
+    - link "Built with Gradio logo" [ref=e189] [cursor=pointer]:
+      - /url: https://gradio.app
+      - text: Built with Gradio
+      - img "logo" [ref=e190]
+    - generic [ref=e191]: ·
+    - button "Settings Settings" [ref=e192] [cursor=pointer]:
+      - text: Settings
+      - img "Settings" [ref=e193]
