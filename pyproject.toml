@@ -2,6 +2,8 @@
 name = "sora-i2v"
 version = "0.1.0"
 description = "Standalone image + prompt → video app powered by OpenAI Sora"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     # OpenAI Videos API (Sora) — image-to-video generation. The Videos API
