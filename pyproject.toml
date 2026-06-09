@@ -1,0 +1,17 @@
+[project]
+name = "sora-i2v"
+version = "0.1.0"
+description = "Standalone image + prompt → video app powered by OpenAI Sora"
+requires-python = ">=3.10"
+dependencies = [
+    # OpenAI Videos API (Sora) — image-to-video generation. The Videos API
+    # lives on recent SDK releases; uv resolves the newest compatible build.
+    "openai>=1.50.0",
+    # Cover-crop the input image to Sora's exact required resolution.
+    "Pillow>=10.0.0",
+    # Load OPENAI_API_KEY from .env at runtime.
+    "python-dotenv>=1.0.0",
+    # Local web dashboard (dashboard.py) — image upload, lever toggles,
+    # live progress, inline video. (6.0 API: theme passed to launch().)
+    "gradio>=6.0.0",
+]
