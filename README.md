@@ -2,8 +2,9 @@
 
 A standalone frontend for the OpenAI **Sora** Videos API. Turn a **prompt**
 (with an optional **seed image**) into a short video, then **extend**, **remix**,
-or **edit** it, and reuse **characters** across clips. Comes with a CLI and a
-local web dashboard. No project-specific dependencies.
+or **edit** it, reuse **characters** across clips — and **upscale** any result
+with Real-ESRGAN on a Modal GPU. Comes with a CLI and a local web dashboard.
+No project-specific dependencies.
 
 > [!WARNING]
 > **API runway:** OpenAI has announced the Videos API and the `sora-2` /
@@ -57,6 +58,9 @@ make dashboard          # → http://127.0.0.1:7860
   (and seconds for extend), run.
 - **Characters** — upload a short clip + a name → get a reusable **character id**
   to drop into the Generate tab.
+- **Upscale** — pick any finished clip from `output/` (or upload one), choose a
+  Real-ESRGAN model and a 2–4x scale; runs on a Modal GPU (see
+  [Upscaling](#upscaling-real-esrgan-on-a-modal-gpu)).
 
 It calls the Sora operations in-process via `modules/sora_client.py`.
 
@@ -88,11 +92,59 @@ make video PROMPT="the cat looks up slowly" IMAGE=cat.png            # image-to-
 make video PROMPT="..." IMAGE=cat.png ARGS=--mute MODEL=sora-2-pro SIZE=1024x1792
 ```
 
+## Upscaling (Real-ESRGAN on a Modal GPU)
+
+Sora tops out at 720p frames (1024×1792 with pro). The **Upscale** tab and
+`upscale.py` run any finished clip through
+[Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN) super-resolution on a
+serverless [Modal](https://modal.com) GPU — no local torch/CUDA install, and
+the audio track is preserved (stream-copied, never re-encoded). This is pure
+post-processing: the Sora generation flow is untouched.
+
+One-time setup:
+
+```bash
+uv run modal setup           # create/link a Modal account (free tier works)
+make deploy-upscaler         # build + deploy the GPU app (first build ~5-10 min)
+```
+
+Then:
+
+```bash
+make upscale INPUT=output/clip.mp4                          # → output/clip_2x.mp4
+make upscale INPUT=output/clip.mp4 SCALE=4 UPSCALE_MODEL=realesrgan-x4plus
+uv run python upscale.py --input output/clip.mp4 --scale 2  # same thing, direct
+```
+
+| Model | Character | 8s clip on L4 |
+|---|---|---|
+| `realesr-general-x4v3` (default) | balanced photoreal quality, fast | ~1–2 min |
+| `realesrgan-x4plus` | max photoreal detail | ~3–8 min |
+| `realesr-animevideov3` | animation / stylized, most temporally stable | ~1–2 min |
+
+Cost & behavior:
+
+- L4 ≈ $0.80/hr ([Modal pricing](https://modal.com/pricing)) → roughly
+  **$0.02–0.11 per 8s clip** depending on the model. The first call after idle
+  adds a ~30–60s cold start; the container then stays warm for 5 minutes.
+- The models are native **4x** — a smaller `--scale` runs the full network and
+  downsamples, so it costs the same. Pick the scale by target size:
+  720×1280 → 2x = 1440×2560, 4x = 2880×5120.
+- The GPU is fixed at deploy time: `UPSCALER_GPU=A10G make deploy-upscaler`
+  (a comma list like `UPSCALER_GPU=L4,A10G` adds fallback). Re-run
+  `make deploy-upscaler` after editing `modal_upscaler.py`.
+
+Troubleshooting — each error says exactly this: *"Modal isn't set up"* →
+`uv run modal setup` · *"isn't deployed"* → `make deploy-upscaler` ·
+*GPU out of memory* → use `realesr-general-x4v3` or a lower scale.
+
 ## Prerequisites
 
 - **Python 3.10+** via [uv](https://docs.astral.sh/uv/)
 - An **`OPENAI_API_KEY`** whose account/project has **Sora / Videos API** access
 - **ffmpeg** — *only* if you use `--mute` / the Mute toggle (`brew install ffmpeg`)
+- A **Modal account** — *only* for upscaling (`uv run modal setup`; GPU time is
+  billed by Modal, free-tier credits work)
 
 ## Idempotency & cost control
 
@@ -119,10 +171,13 @@ subjects accurately ("felt figurines / illustration, not realistic humans").
 ```
 sora-i2v/
 ├── pipeline.py            # CLI: prompt (+ optional image) → video
-├── dashboard.py           # Gradio web dashboard (generate / extend·remix·edit / characters)
-├── config.py             # SoraSpec / VideoSpec, model↔size table
+├── upscale.py             # CLI: upscale a finished clip (Real-ESRGAN on Modal)
+├── dashboard.py           # Gradio web dashboard (generate / extend·remix·edit / characters / upscale)
+├── modal_upscaler.py      # the Modal GPU app — self-contained; make deploy-upscaler
+├── config.py             # SoraSpec / VideoSpec / UpscaleSpec, model↔size table
 ├── modules/
 │   ├── sora_client.py    # the only OpenAI surface: generate, remix, extend, edit, characters
+│   ├── upscale_client.py # the only Modal surface: drives the deployed upscaler
 │   ├── image_prep.py     # cover-crop the seed image to Sora's size
 │   ├── postprocess.py    # optional ffmpeg mute (strip audio)
 │   ├── logging_setup.py  # logging config

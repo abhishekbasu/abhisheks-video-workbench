@@ -84,3 +84,35 @@ class PipelineConfig:
 
 
 DEFAULT_CONFIG = PipelineConfig()
+
+
+# ── Upscaling (standalone post-processing — separate from the generation
+# pipeline above, so PipelineConfig stays untouched) ─────────────────────────
+
+# Real-ESRGAN model registry: CLI/UI name → short human description.
+# Keys must match WEIGHTS in modal_upscaler.py (which can't import this file —
+# it's deployed standalone to Modal).
+UPSCALE_MODELS: dict[str, str] = {
+    "realesr-general-x4v3": "fast default — balanced photoreal quality",
+    "realesrgan-x4plus": "max photoreal detail — slowest",
+    "realesr-animevideov3": "animation / stylized — best temporal stability",
+}
+
+
+@dataclass(frozen=True)
+class UpscaleSpec:
+    """Modal Real-ESRGAN upscaler settings (deploy target + defaults).
+
+    ``app_name``/``class_name`` identify the deployed Modal app
+    (``make deploy-upscaler``); the client looks it up by name at call time.
+    ``outscale`` is the output size multiplier (the models are native 4x —
+    smaller scales run the full network, then downsample).
+    """
+
+    app_name: str = "sora-upscaler"
+    class_name: str = "Upscaler"
+    model: str = "realesr-general-x4v3"
+    outscale: float = 2.0
+
+
+DEFAULT_UPSCALE = UpscaleSpec()

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Local web dashboard — a frontend for the OpenAI Sora Videos API.
 
-Three tabs:
+Four tabs:
   * Generate            — text- or image-to-video, with every create-time
                           dial (model, size, seconds), optional reusable
                           characters, and an optional mute (strip audio).
   * Extend / Remix / Edit — operate on any finished clip by its video id.
   * Characters          — build a reusable character from an uploaded clip.
+  * Upscale             — Real-ESRGAN super-resolution for any finished clip,
+                          running on a Modal GPU (see modal_upscaler.py).
 
 Runs the Sora operations in-process via ``modules/sora_client`` (the single
 OpenAI surface), with a live progress bar driven by the poll callback. The
@@ -26,7 +28,16 @@ from pathlib import Path
 import gradio as gr
 from dotenv import load_dotenv
 
-from config import MODEL_SIZES, OUTPUT_DIR, TMP_DIR, VALID_SECONDS, SoraSpec, VideoSpec
+from config import (
+    DEFAULT_UPSCALE,
+    MODEL_SIZES,
+    OUTPUT_DIR,
+    TMP_DIR,
+    UPSCALE_MODELS,
+    VALID_SECONDS,
+    SoraSpec,
+    VideoSpec,
+)
 from modules.image_prep import prepare_input_image
 from modules.logging_setup import configure_logging
 from modules.postprocess import ffmpeg_available, strip_audio
@@ -37,6 +48,7 @@ from modules.sora_client import (
     generate_video,
     remix_video,
 )
+from modules.upscale_client import modal_configured, upscale_video
 from modules.utils import ensure_dir, safe_slug
 
 
@@ -54,12 +66,22 @@ def _require_key() -> None:
         raise gr.Error("OPENAI_API_KEY is not set. Add it to .env (cp .env.example .env).")
 
 
-def _progress_cb(progress):
+def _progress_cb(progress, label="Sora"):
     """Build an on_progress(status, pct) that drives the Gradio progress bar."""
     def cb(status, pct):
         frac = min((pct or 0) / 100.0, 0.99)
-        progress(frac, desc=f"Sora: {status}" + (f" {pct}%" if pct is not None else ""))
+        progress(frac, desc=f"{label}: {status}" + (f" {pct}%" if pct is not None else ""))
     return cb
+
+
+def _output_videos() -> list[str]:
+    """Finished clips in output/, newest first (candidates for upscaling)."""
+    return [
+        str(p)
+        for p in sorted(
+            OUTPUT_DIR.glob("*.mp4"), key=lambda p: p.stat().st_mtime, reverse=True
+        )
+    ]
 
 
 def _char_ids(text: str) -> list[str]:
@@ -172,6 +194,33 @@ def do_create_character(clip, name, progress=gr.Progress()):
         f"Use this id in the **Generate** tab's *Character ids* field:\n\n`{cid}`"
     )
     return msg, cid
+
+
+def do_upscale(source, upload, model, scale, progress=gr.Progress()):
+    src = Path(upload) if upload else (Path(source) if source else None)
+    if src is None:
+        raise gr.Error("Pick a clip from output/ or upload a video.")
+    if not src.exists():
+        raise gr.Error(f"File not found: {src}. Hit 'Refresh list' and pick again.")
+    if not modal_configured():
+        raise gr.Error(
+            "Modal isn't set up — run `uv run modal setup` once, then `make deploy-upscaler`."
+        )
+
+    ensure_dir(OUTPUT_DIR)
+    outscale = float(scale)
+    dst = OUTPUT_DIR / f"{src.stem}_{outscale:g}x.mp4"
+
+    try:
+        upscale_video(
+            src, dst, model=model, outscale=outscale,
+            on_progress=_progress_cb(progress, label="Real-ESRGAN"),
+        )
+    except Exception as exc:  # noqa: BLE001 — surface UpscaleError cleanly
+        raise gr.Error(str(exc))
+
+    status = f"✅ Upscaled `{src.name}` → `{dst.name}` · {model} · {outscale:g}x"
+    return str(dst), status
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -588,6 +637,23 @@ IDLE_CHAR_HTML = """
 </div>
 """
 
+IDLE_UPSCALE_HTML = """
+<div class="so-idle">
+  <div class="so-idle-eyebrow">Upscaled result</div>
+  <div class="so-idle-title">Sharper, bigger — after the fact.</div>
+  <p class="so-idle-body">
+    Pick any finished clip (or upload one), choose a Real-ESRGAN model and scale,
+    and press <strong>Upscale</strong>. The enhanced clip plays here and is saved
+    next to the original as <code>&lt;name&gt;_&lt;scale&gt;x.mp4</code> — audio intact.
+  </p>
+  <p class="so-idle-note">
+    Runs on a Modal GPU — a few cents per clip; 1–2 minutes on the default model
+    (longer for <code>realesrgan-x4plus</code>), plus a short cold start after idle.
+    One-time setup: <code>uv run modal setup</code>, then <code>make deploy-upscaler</code>.
+  </p>
+</div>
+"""
+
 
 # ────────────────────────────────────────────────────────────────────────────
 # UI
@@ -698,6 +764,39 @@ with gr.Blocks(title="Sora · Image → Video") as demo:
                     c_status = gr.Markdown(IDLE_CHAR_HTML, elem_classes="result-status")
                     c_id = gr.Textbox(label="Character id", interactive=False)
 
+        # ---- Upscale ----
+        with gr.Tab("Upscale"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=1, min_width=420):
+                    gr.HTML("<div class='so-section'>Source<div class='so-section-rule'></div></div>")
+                    u_source = gr.Dropdown(
+                        _output_videos(), value=None,
+                        label="Generated clip — output/*.mp4",
+                        info="Newest first. Refresh after generating.",
+                    )
+                    u_refresh = gr.Button("Refresh list", size="sm", variant="secondary")
+                    u_upload = gr.Video(
+                        label="…or upload any video", sources=["upload"], height=200,
+                    )
+
+                    gr.HTML("<div class='so-section'>Enhancement<div class='so-section-rule'></div></div>")
+                    u_model = gr.Dropdown(
+                        choices=[(f"{name} — {desc}", name) for name, desc in UPSCALE_MODELS.items()],
+                        value=DEFAULT_UPSCALE.model,
+                        label="Model",
+                        info="Runs remotely on a Modal GPU — nothing heavy installs locally.",
+                    )
+                    u_scale = gr.Radio(
+                        [2, 3, 4], value=2, label="Scale",
+                        info="720×1280 → 2x = 1440×2560 · 4x = 2880×5120.",
+                    )
+
+                    u_btn = gr.Button("Upscale", variant="primary", size="lg")
+
+                with gr.Column(scale=1, min_width=420):
+                    u_status = gr.Markdown(IDLE_UPSCALE_HTML, elem_classes="result-status")
+                    u_video = gr.Video(label="Upscaled result", height=380)
+
     # ---- wiring ----
     g_model.change(
         lambda m: gr.update(choices=_sizes_for(m), value=_sizes_for(m)[0]),
@@ -712,6 +811,10 @@ with gr.Blocks(title="Sora · Image → Video") as demo:
         do_op, inputs=[o_op, o_src, o_prompt, o_seconds], outputs=[o_video, o_status, o_id]
     )
     c_btn.click(do_create_character, inputs=[c_clip, c_name], outputs=[c_status, c_id])
+    u_refresh.click(lambda: gr.update(choices=_output_videos()), outputs=u_source)
+    u_btn.click(
+        do_upscale, inputs=[u_source, u_upload, u_model, u_scale], outputs=[u_video, u_status]
+    )
 
 
 if __name__ == "__main__":

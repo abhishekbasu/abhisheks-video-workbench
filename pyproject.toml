@@ -16,4 +16,5 @@ dependencies = [
     # Local web dashboard (dashboard.py) — image upload, lever toggles,
     # live progress, inline video. (6.0 API: theme passed to launch().)
     "gradio>=6.0.0",
+    "modal>=1.5.0",
 ]
