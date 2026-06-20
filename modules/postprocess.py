@@ -49,3 +49,45 @@ def strip_audio(src: Path, dst: Path) -> Path:
         )
     logger.info("Stripped audio → %s", dst.name)
     return dst
+
+
+def concat_videos(video_paths: list[Path], output_path: Path) -> Path:
+    """Concatenate multiple videos sequentially using ffmpeg's concat demuxer (lossless)."""
+    if not ffmpeg_available():
+        raise PostProcessError("ffmpeg not found on PATH — needed for video concatenation.")
+    
+    if not video_paths:
+        raise PostProcessError("No video paths provided for concatenation.")
+    
+    if len(video_paths) == 1:
+        shutil.copy2(video_paths[0], output_path)
+        return output_path
+
+    # Create a temporary inputs.txt file for the concat demuxer
+    inputs_txt = output_path.parent / f"inputs_{output_path.stem}.txt"
+    try:
+        with open(inputs_txt, "w") as f:
+            for p in video_paths:
+                # ffmpeg requires paths in inputs.txt to be relative or properly escaped
+                # the safest cross-platform way is absolute paths with single quotes
+                f.write(f"file '{p.absolute()}'\n")
+
+        cmd = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+            "-f", "concat",
+            "-safe", "0",
+            "-i", str(inputs_txt),
+            "-c", "copy",
+            "-movflags", "+faststart",
+            str(output_path)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise PostProcessError(
+                f"ffmpeg failed to concatenate videos: exit={result.returncode}\n{result.stderr.strip()}"
+            )
+        logger.info("Concatenated %d videos → %s", len(video_paths), output_path.name)
+        return output_path
+    finally:
+        if inputs_txt.exists():
+            inputs_txt.unlink()

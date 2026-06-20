@@ -15,7 +15,7 @@ Usage:
 Stages: (1) optional image prep (cover-crop to Sora's size) → (2) Sora generate
 (create → poll → download) → output/<prompt-slug>.mp4 (+ .webp thumbnail,
 .jpg spritesheet). For remix / extend / edit / character creation, use the
-dashboard (`make dashboard`).
+web app (`make serve`).
 
 Idempotency: the *paid* job is resumed (not re-billed) for an identical request;
 an already-downloaded clip is reused. Use --clean to reset.

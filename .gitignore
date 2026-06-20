@@ -8,6 +8,11 @@ __pycache__/
 
 tmp/
 output/
+.uploads/
+
+# frontend (Vue + Vite)
+frontend/node_modules/
+frontend/dist/
 
 .DS_Store
 .vscode/

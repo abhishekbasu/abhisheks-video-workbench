@@ -3,8 +3,8 @@
 A standalone frontend for the OpenAI **Sora** Videos API. Turn a **prompt**
 (with an optional **seed image**) into a short video, then **extend**, **remix**,
 or **edit** it, reuse **characters** across clips — and **upscale** any result
-with Real-ESRGAN on a Modal GPU. Comes with a CLI and a local web dashboard.
-No project-specific dependencies.
+with Real-ESRGAN on a Modal GPU. Comes with a CLI and a local web app
+(Vue 3 SPA + FastAPI backend).
 
 > [!WARNING]
 > **API runway:** OpenAI has announced the Videos API and the `sora-2` /
@@ -15,10 +15,10 @@ No project-specific dependencies.
 ## Quick start
 
 ```bash
-uv sync                      # install deps (uses uv: https://docs.astral.sh/uv/)
+uv sync                      # install Python deps (uses uv: https://docs.astral.sh/uv/)
 cp .env.example .env         # add OPENAI_API_KEY (Sora-enabled account)
 
-make dashboard               # → http://127.0.0.1:7860  (easiest)
+make serve                   # build the SPA + run the app → http://127.0.0.1:8000  (easiest)
 # …or the CLI:
 uv run python pipeline.py "a slow cinematic push-in, rain on the glass" --image photo.png
 uv run python pipeline.py "a calico cat on a skateboard, neon city at night"   # text-to-video
@@ -45,10 +45,19 @@ Beyond create, the app surfaces the other Videos-API operations:
 | **edit** | Extend/Remix/Edit | prompt-based edit of a finished clip |
 | **outputs** | everywhere | downloads the mp4 + a `.webp` thumbnail + a `.jpg` spritesheet |
 
-## Dashboard
+## Web app
+
+A **Vue 3 SPA** (`frontend/`) talking to a **FastAPI backend** (`server/`). The
+backend exposes the `modules/*` operations over a small JSON/multipart API, runs
+the long async jobs on background threads, and streams their progress to the
+browser over Server-Sent Events.
 
 ```bash
-make dashboard          # → http://127.0.0.1:7860
+make serve              # build the SPA + serve API + UI → http://127.0.0.1:8000
+
+# or, for frontend development with hot reload (two terminals):
+make backend            # FastAPI w/ --reload on :8000
+make frontend           # Vite dev server on :5173 (proxies /api to :8000)
 ```
 
 - **Generate** — seed image (optional), prompt, model/size/seconds, character ids,
@@ -56,13 +65,16 @@ make dashboard          # → http://127.0.0.1:7860
   the **video id** appear on the right (copy the id to extend/remix it).
 - **Extend / Remix / Edit** — paste a source video id, pick the operation, prompt
   (and seconds for extend), run.
+- **Long Form** — chain 12-second extensions from a starting clip into a long take
+  (up to 5 minutes), stitched with ffmpeg; optional auto-upscale.
 - **Characters** — upload a short clip + a name → get a reusable **character id**
   to drop into the Generate tab.
 - **Upscale** — pick any finished clip from `output/` (or upload one), choose a
   Real-ESRGAN model and a 2–4x scale; runs on a Modal GPU (see
   [Upscaling](#upscaling-real-esrgan-on-a-modal-gpu)).
 
-It calls the Sora operations in-process via `modules/sora_client.py`.
+The first run of `make serve` installs the frontend's npm packages and builds it,
+so it needs **Node 18+ / npm** on PATH.
 
 ## CLI
 
@@ -82,7 +94,7 @@ uv run python pipeline.py "<prompt>" [options]
 
 `sora-2` only supports the 720p sizes; the larger sizes require `--model sora-2-pro`
 (validated before calling the API). The CLI covers generate; extend/remix/edit/
-characters live in the dashboard.
+long-form/characters live in the web app.
 
 Makefile wrapper:
 
@@ -141,8 +153,10 @@ Troubleshooting — each error says exactly this: *"Modal isn't set up"* →
 ## Prerequisites
 
 - **Python 3.10+** via [uv](https://docs.astral.sh/uv/)
+- **Node 18+ / npm** — to build the web app (`frontend/`); not needed for the CLI
 - An **`OPENAI_API_KEY`** whose account/project has **Sora / Videos API** access
-- **ffmpeg** — *only* if you use `--mute` / the Mute toggle (`brew install ffmpeg`)
+- **ffmpeg** — for the Mute toggle / `--mute`, and required for Long Form
+  (`brew install ffmpeg`)
 - A **Modal account** — *only* for upscaling (`uv run modal setup`; GPU time is
   billed by Modal, free-tier credits work)
 
@@ -172,14 +186,19 @@ subjects accurately ("felt figurines / illustration, not realistic humans").
 sora-i2v/
 ├── pipeline.py            # CLI: prompt (+ optional image) → video
 ├── upscale.py             # CLI: upscale a finished clip (Real-ESRGAN on Modal)
-├── dashboard.py           # Gradio web dashboard (generate / extend·remix·edit / characters / upscale)
 ├── modal_upscaler.py      # the Modal GPU app — self-contained; make deploy-upscaler
 ├── config.py             # SoraSpec / VideoSpec / UpscaleSpec, model↔size table
+├── server/               # FastAPI backend for the web app
+│   ├── main.py           # endpoints + SSE job progress + serves the built SPA
+│   ├── jobs.py           # background-thread job registry
+│   └── schemas.py        # request models
+├── frontend/             # Vue 3 + Vite + TS SPA (built into frontend/dist)
+│   └── src/              # App.vue, views/ (the 5 tabs), components/, composables/
 ├── modules/
 │   ├── sora_client.py    # the only OpenAI surface: generate, remix, extend, edit, characters
 │   ├── upscale_client.py # the only Modal surface: drives the deployed upscaler
 │   ├── image_prep.py     # cover-crop the seed image to Sora's size
-│   ├── postprocess.py    # optional ffmpeg mute (strip audio)
+│   ├── postprocess.py    # optional ffmpeg mute (strip audio) + concat for long form
 │   ├── logging_setup.py  # logging config
 │   └── utils.py          # slug + dir helpers
 ├── tmp/                  # intermediates + job cache (gitignored)

@@ -13,8 +13,10 @@ dependencies = [
     "Pillow>=10.0.0",
     # Load OPENAI_API_KEY from .env at runtime.
     "python-dotenv>=1.0.0",
-    # Local web dashboard (dashboard.py) — image upload, lever toggles,
-    # live progress, inline video. (6.0 API: theme passed to launch().)
-    "gradio>=6.0.0",
+    # Web backend for the Vue frontend (server/) — REST + multipart uploads +
+    # SSE job progress, serving the built SPA. python-multipart powers Form/File.
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "python-multipart>=0.0.9",
     "modal>=1.5.0",
 ]

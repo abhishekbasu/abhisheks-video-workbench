@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openai import OpenAI
+from openai.types.video import Video
 
 from config import SoraSpec
 
@@ -161,8 +162,15 @@ def extend_video(
     """Continue ``video_id`` with a +``seconds`` segment guided by ``prompt``."""
     client = OpenAI()
     try:
-        new = client.videos.extend(
-            video={"id": video_id}, prompt=prompt, seconds=seconds
+        # The SDK's client.videos.extend() hardcodes multipart/form-data and runs
+        # extract_files() on `video`, which rejects a {"id": ...} reference dict
+        # ("Expected entry at `video` to be bytes ... received dict"). Referencing
+        # a completed clip by id is an application/json request per the REST API, so
+        # post directly to bypass the broken multipart wrapper.
+        new = client.post(
+            "/videos/extensions",
+            body={"prompt": prompt, "seconds": seconds, "video": {"id": video_id}},
+            cast_to=Video,
         )
     except Exception as exc:  # noqa: BLE001
         raise SoraError(f"Failed to extend {video_id}: {exc}") from exc
@@ -176,15 +184,145 @@ def edit_video(
     """Apply a prompt-based edit to ``video_id``."""
     client = OpenAI()
     try:
-        new = client.videos.edit(video={"id": video_id}, prompt=prompt)
+        # Same SDK bug as extend_video: client.videos.edit() forces multipart and
+        # extract_files() rejects the {"id": ...} reference. Post JSON directly.
+        new = client.post(
+            "/videos/edits",
+            body={"prompt": prompt, "video": {"id": video_id}},
+            cast_to=Video,
+        )
     except Exception as exc:  # noqa: BLE001
         raise SoraError(f"Failed to edit {video_id}: {exc}") from exc
     logger.info("Edit job %s (from %s)", new.id, video_id)
     return _finish(client, new.id, output_path, spec, on_progress, download_variants)
 
 
-# ────────────────────────────────────────────────────────────────────────────
-# Characters (reusable, consistent subjects)
+import math
+from modules.postprocess import concat_videos
+
+def extend_video_loop(
+    *, 
+    source_video_id: str, 
+    prompt: str, 
+    target_seconds: int, 
+    output_path: Path, 
+    spec: SoraSpec, 
+    tmp_dir: Path,
+    on_progress=None, 
+    download_variants=False
+) -> SoraResult:
+    """
+    Iteratively extend a video to reach a target duration, handling checkpointing and concatenation.
+    Assumes the source video is 8 seconds long, and each extension adds 12 seconds.
+    """
+    ensure_dir = output_path.parent
+    ensure_dir.mkdir(parents=True, exist_ok=True)
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    # 1. State tracking (Checkpointing)
+    params = _fingerprint(prompt=prompt, image_path=None, spec=spec, character_ids=None)
+    params["source_video_id"] = source_video_id
+    params["target_seconds"] = target_seconds
+    
+    # We use a unique checkpoint file based on the source_id + prompt to allow independent long-form jobs
+    run_hash = hashlib.sha256(f"{source_video_id}_{prompt}_{target_seconds}".encode()).hexdigest()[:8]
+    job_file = tmp_dir / f"long_job_{run_hash}.json"
+    
+    saved = _read_json(job_file)
+    if saved and saved.get("params") == params:
+        video_ids = saved.get("video_ids", [])
+        segment_paths = [Path(p) for p in saved.get("segment_paths", [])]
+        logger.info("Resuming long-form generation from checkpoint %s (completed %d segments)", job_file.name, len(video_ids))
+    else:
+        video_ids = []
+        segment_paths = []
+        _write_json(job_file, {"params": params, "video_ids": video_ids, "segment_paths": [str(p) for p in segment_paths]})
+
+    # Download the source video if it's not already in our segment list
+    client = OpenAI()
+    
+    # Estimate total segments needed.
+    # We assume the source is 8s. Each extend adds 12s.
+    # Total time = 8 + 12 * extensions. So extensions = ceil((target_seconds - 8) / 12)
+    source_duration = 8  # A reasonable assumption; exact duration is not strictly exposed before download.
+    if target_seconds <= source_duration:
+         raise ValueError(f"Target duration ({target_seconds}s) must be greater than source duration (~{source_duration}s).")
+    
+    needed_extensions = math.ceil((target_seconds - source_duration) / 12.0)
+    total_segments = needed_extensions + 1  # Source + extensions
+
+    if len(segment_paths) == 0:
+        # First step: Download the source video so we can concat it later.
+        source_output = tmp_dir / f"segment_00_{source_video_id}.mp4"
+        if not source_output.exists():
+             _download(client, source_video_id, source_output, variant="video")
+        video_ids.append(source_video_id)
+        segment_paths.append(source_output)
+        _write_json(job_file, {"params": params, "video_ids": video_ids, "segment_paths": [str(p) for p in segment_paths]})
+
+    def macro_progress(current_seg, total_seg, micro_status, micro_pct):
+        if on_progress:
+            macro_frac = (current_seg - 1) / float(total_seg)
+            micro_frac = (micro_pct or 0.0) / 100.0
+            # Weight the current segment's progress within the whole
+            overall_frac = macro_frac + (micro_frac * (1.0 / total_seg))
+            
+            status_text = f"[Seg {current_seg}/{total_seg}] {micro_status}"
+            # Call the on_progress(status, pct) callback with an overall percent
+            # (0–100) across all segments, matching the other operations.
+            on_progress(status_text, int(overall_frac * 100))
+
+    # 2. Extension Loop
+    # We loop until we have total_segments paths
+    while len(segment_paths) < total_segments:
+        current_step = len(segment_paths)
+        prev_video_id = video_ids[-1]
+        
+        logger.info("Long-form: Starting segment %d/%d (extending %s)", current_step + 1, total_segments, prev_video_id)
+        
+        # Determine how many seconds to add. Sora supports 4, 8, 12. We prefer 12.
+        remaining_seconds = target_seconds - (source_duration + (current_step - 1) * 12)
+        extend_secs = "12"
+        if remaining_seconds <= 4:
+            extend_secs = "4"
+        elif remaining_seconds <= 8:
+            extend_secs = "8"
+
+        seg_output = tmp_dir / f"segment_{current_step:02d}_{prev_video_id[:8]}.mp4"
+        
+        def _micro_cb(status, pct):
+            macro_progress(current_step + 1, total_segments, status, pct)
+
+        # Call the existing extend_video function
+        # Note: We pass our specific macro-aware callback
+        result = extend_video(
+            video_id=prev_video_id,
+            prompt=prompt,
+            seconds=extend_secs,
+            output_path=seg_output,
+            spec=spec,
+            on_progress=_micro_cb,
+            download_variants=False # We only need the variants for the final stitched clip, or not at all.
+        )
+        
+        video_ids.append(result.video_id)
+        segment_paths.append(result.video_path)
+        
+        # Save checkpoint
+        _write_json(job_file, {"params": params, "video_ids": video_ids, "segment_paths": [str(p) for p in segment_paths]})
+
+    # 3. Concatenate all segments
+    logger.info("Long-form: Concatenating %d segments into %s", len(segment_paths), output_path.name)
+    if on_progress:
+        on_progress("Stitching segments (ffmpeg)", 99)
+        
+    final_video_path = concat_videos(segment_paths, output_path)
+    
+    # Clean up the job file if successful (optional, but good practice so users can force fresh later)
+    # job_file.unlink(missing_ok=True)
+    
+    return SoraResult(video_ids[-1], final_video_path, None, None)
+
 # ────────────────────────────────────────────────────────────────────────────
 
 
