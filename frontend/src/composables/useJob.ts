@@ -1,64 +1,47 @@
-import { ref } from 'vue'
-import { subscribeJob } from '../api'
-import type { JobResult, JobSnapshot } from '../types'
+import { computed, ref } from 'vue'
+import { useJobs } from './useJobs'
+import type { JobKind } from '../types'
 
 /**
- * Drives one long-running operation: kick it off, follow its SSE progress, and
- * expose reactive state for a view to bind to a ProgressBar + result panel.
+ * Per-view binding over the persistent job store. Each view passes its `kind`;
+ * the view shows the currently-selected job for that kind (defaults to the most
+ * recent), which survives reloads. `start()` POSTs the operation and registers
+ * the returned job id with the store, which handles SSE + persistence.
  */
-export function useJob() {
-  const running = ref(false)
-  const stage = ref('')
-  const progress = ref(0)
-  const result = ref<JobResult | null>(null)
-  const error = ref<string | null>(null)
+export function useJob(kind: JobKind) {
+  const store = useJobs()
+  const active = store.activeFor(kind)
+  // True between the click and the job id coming back from the server.
+  const pending = ref(false)
 
-  let close: (() => void) | null = null
-
-  function reset() {
-    result.value = null
-    error.value = null
-    stage.value = ''
-    progress.value = 0
-  }
+  const running = computed(
+    () => pending.value || active.value?.status === 'running' || active.value?.status === 'queued',
+  )
+  const progress = computed(() => (pending.value ? 0 : active.value?.progress ?? 0))
+  const stage = computed(() => (pending.value ? 'starting…' : active.value?.stage ?? ''))
+  const result = computed(() =>
+    !pending.value && active.value?.status === 'done' ? active.value.result : null,
+  )
+  const error = computed(() => {
+    if (pending.value || !active.value) return null
+    if (active.value.status === 'error') return active.value.error || 'The job failed.'
+    if (active.value.status === 'expired') return active.value.stage
+    return null
+  })
 
   /** `starter` performs the POST and resolves to the new job id. */
-  async function start(starter: () => Promise<string>) {
+  async function start(starter: () => Promise<string>, label = '') {
     if (running.value) return
-    reset()
-    running.value = true
-    stage.value = 'starting…'
+    pending.value = true
     try {
-      const jobId = await starter()
-      close = subscribeJob(
-        jobId,
-        (snap: JobSnapshot) => {
-          progress.value = snap.progress
-          if (snap.stage) stage.value = snap.stage
-          if (snap.status === 'done') {
-            result.value = snap.result
-            stage.value = snap.result?.message || 'done'
-            progress.value = 100
-            running.value = false
-            close?.()
-          } else if (snap.status === 'error') {
-            error.value = snap.error || 'The job failed.'
-            running.value = false
-            close?.()
-          }
-        },
-        (message: string) => {
-          if (running.value) {
-            error.value = message
-            running.value = false
-          }
-        },
-      )
+      const id = await starter()
+      store.track(kind, label, id)
     } catch (e: any) {
-      error.value = e?.message ?? String(e)
-      running.value = false
+      store.trackError(kind, label, e?.message ?? String(e))
+    } finally {
+      pending.value = false
     }
   }
 
-  return { running, stage, progress, result, error, start, reset }
+  return { running, stage, progress, result, error, start }
 }

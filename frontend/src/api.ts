@@ -22,6 +22,15 @@ export async function getOutputs(): Promise<OutputClip[]> {
   return res.json()
 }
 
+/** Fetch a job's current snapshot. Returns null if the server doesn't know it
+ *  (404 — e.g. the backend was restarted since the job ran). */
+export async function getJob(id: string): Promise<JobSnapshot | null> {
+  const res = await fetch(`/api/jobs/${id}`)
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(await errorText(res))
+  return res.json()
+}
+
 async function startJob(path: string, init: RequestInit): Promise<string> {
   // `path` is already a full API path (e.g. "/api/generate"), matching
   // getConfig/getOutputs — do not prepend "/api" again.

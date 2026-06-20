@@ -1,6 +1,6 @@
 """In-memory job registry for long-running Sora / upscale operations.
 
-The ``modules/*`` functions block for minutes (hours, for Long Form) and report
+The ``modules/*`` functions block for minutes at a time and report
 progress through an ``on_progress(status, pct)`` callback. The browser can't hold
 a request open that long, so each operation runs on a background thread and writes
 its progress into a :class:`Job` record here. The API surfaces those records as a

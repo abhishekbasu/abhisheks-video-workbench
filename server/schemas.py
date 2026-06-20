@@ -17,12 +17,3 @@ class OperateRequest(BaseModel):
     source_id: str
     prompt: str
     seconds: str = "8"  # extend only; ignored by remix/edit
-
-
-class LongFormRequest(BaseModel):
-    """Chain extensions to build a long take from a starting clip."""
-
-    source_id: str
-    prompt: str
-    target_seconds: int = 60
-    auto_upscale: bool = False

@@ -946,6 +946,248 @@ input[type='range']::-moz-range-thumb {
   flex-wrap: wrap;
 }
 
+/* ── masthead right cluster + Jobs button ─────────────────────────────────── */
+.masthead-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+.jobs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+.jobs-btn:hover {
+  border-color: var(--line-strong);
+  background: var(--bg-2);
+}
+.jobs-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+}
+.jobs-dot.live {
+  background: var(--acc);
+  box-shadow: 0 0 9px var(--acc);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.jobs-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--acc-ink);
+  background: var(--acc);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 1px;
+}
+
+/* ── job history drawer ───────────────────────────────────────────────────── */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(4, 5, 7, 0.6);
+  backdrop-filter: blur(2px);
+}
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 41;
+  width: min(420px, 92vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.9);
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.drawer-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+.drawer-actions {
+  display: flex;
+  gap: 8px;
+}
+.drawer-empty {
+  padding: 32px 22px;
+  color: var(--ink-dim);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.job-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+.job-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.13s ease, border-color 0.13s ease;
+}
+.job-row:hover {
+  background: var(--bg-2);
+  border-color: var(--line);
+}
+.job-thumb {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+}
+.job-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.job-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+}
+.job-body {
+  flex: 1;
+  min-width: 0;
+}
+.job-label {
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.job-meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 3px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.job-kind {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+.job-track {
+  height: 4px;
+  background: var(--bg-3);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+.job-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--acc-press), var(--acc));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.job-fill.indeterminate {
+  width: 40% !important;
+  animation: indet 1.3s ease-in-out infinite;
+}
+.job-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.js {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.js.running {
+  color: var(--acc);
+}
+.js.done {
+  color: var(--ok);
+}
+.js.error {
+  color: var(--bad);
+}
+.js.expired {
+  color: var(--ink-faint);
+}
+.job-x {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--ink-faint);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 4px;
+  transition: color 0.13s ease;
+}
+.job-x:hover {
+  color: var(--bad);
+}
+
+/* drawer transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(100%);
+}
+
+@media (max-width: 620px) {
+  .masthead-right {
+    align-items: flex-start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

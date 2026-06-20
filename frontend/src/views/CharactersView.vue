@@ -5,7 +5,7 @@ import { postForm } from '../api'
 import ResultPanel from '../components/ResultPanel.vue'
 import IdleCard from '../components/IdleCard.vue'
 
-const job = useJob()
+const job = useJob('characters')
 
 const name = ref('')
 const clipFile = ref<File | null>(null)
@@ -29,7 +29,7 @@ function submit() {
   const form = new FormData()
   form.set('name', name.value)
   form.set('clip', clipFile.value)
-  job.start(() => postForm('/api/characters', form))
+  job.start(() => postForm('/api/characters', form), name.value.trim())
 }
 </script>
 

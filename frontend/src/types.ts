@@ -40,3 +40,21 @@ export interface JobSnapshot {
   error: string | null
   version: number
 }
+
+export type JobKind = 'generate' | 'operate' | 'characters' | 'upscale'
+
+// 'expired' = the server no longer knows this job (e.g. it was restarted) and we
+// have no cached result. Persisted to localStorage so jobs survive a reload.
+export type EntryStatus = JobStatus | 'expired'
+
+export interface JobEntry {
+  id: string
+  kind: JobKind
+  label: string
+  createdAt: number
+  status: EntryStatus
+  progress: number
+  stage: string
+  result: JobResult | null
+  error: string | null
+}

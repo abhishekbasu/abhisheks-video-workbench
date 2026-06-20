@@ -14,7 +14,7 @@
 #   make upscale INPUT=output/clip.mp4                                   # → output/clip_2x.mp4
 #   make upscale INPUT=output/clip.mp4 SCALE=4 UPSCALE_MODEL=realesrgan-x4plus
 #
-# The web app (generate / extend·remix·edit / long form / characters / upscale)
+# The web app (generate / extend·remix·edit / characters / upscale)
 # is the Vue SPA in frontend/ served by the FastAPI backend in server/.
 
 MODEL         ?= sora-2

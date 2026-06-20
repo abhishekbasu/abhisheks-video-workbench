@@ -8,7 +8,7 @@ import ResultPanel from '../components/ResultPanel.vue'
 import IdleCard from '../components/IdleCard.vue'
 
 const { config } = useConfig()
-const job = useJob()
+const job = useJob('upscale')
 
 const outputs = ref<OutputClip[]>([])
 const sourceName = ref('')
@@ -62,7 +62,8 @@ function submit() {
   form.set('scale', String(scale.value))
   if (uploadFile.value) form.set('upload', uploadFile.value)
   else form.set('source_name', sourceName.value)
-  job.start(() => postForm('/api/upscale', form))
+  const label = `${scale.value}× · ${uploadFile.value?.name || sourceName.value}`
+  job.start(() => postForm('/api/upscale', form), label)
 }
 </script>
 

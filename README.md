@@ -65,8 +65,6 @@ make frontend           # Vite dev server on :5173 (proxies /api to :8000)
   the **video id** appear on the right (copy the id to extend/remix it).
 - **Extend / Remix / Edit** — paste a source video id, pick the operation, prompt
   (and seconds for extend), run.
-- **Long Form** — chain 12-second extensions from a starting clip into a long take
-  (up to 5 minutes), stitched with ffmpeg; optional auto-upscale.
 - **Characters** — upload a short clip + a name → get a reusable **character id**
   to drop into the Generate tab.
 - **Upscale** — pick any finished clip from `output/` (or upload one), choose a
@@ -94,7 +92,7 @@ uv run python pipeline.py "<prompt>" [options]
 
 `sora-2` only supports the 720p sizes; the larger sizes require `--model sora-2-pro`
 (validated before calling the API). The CLI covers generate; extend/remix/edit/
-long-form/characters live in the web app.
+characters live in the web app.
 
 Makefile wrapper:
 
@@ -155,8 +153,7 @@ Troubleshooting — each error says exactly this: *"Modal isn't set up"* →
 - **Python 3.10+** via [uv](https://docs.astral.sh/uv/)
 - **Node 18+ / npm** — to build the web app (`frontend/`); not needed for the CLI
 - An **`OPENAI_API_KEY`** whose account/project has **Sora / Videos API** access
-- **ffmpeg** — for the Mute toggle / `--mute`, and required for Long Form
-  (`brew install ffmpeg`)
+- **ffmpeg** — *only* if you use the Mute toggle / `--mute` (`brew install ffmpeg`)
 - A **Modal account** — *only* for upscaling (`uv run modal setup`; GPU time is
   billed by Modal, free-tier credits work)
 
@@ -198,7 +195,7 @@ sora-i2v/
 │   ├── sora_client.py    # the only OpenAI surface: generate, remix, extend, edit, characters
 │   ├── upscale_client.py # the only Modal surface: drives the deployed upscaler
 │   ├── image_prep.py     # cover-crop the seed image to Sora's size
-│   ├── postprocess.py    # optional ffmpeg mute (strip audio) + concat for long form
+│   ├── postprocess.py    # optional ffmpeg mute (strip audio)
 │   ├── logging_setup.py  # logging config
 │   └── utils.py          # slug + dir helpers
 ├── tmp/                  # intermediates + job cache (gitignored)

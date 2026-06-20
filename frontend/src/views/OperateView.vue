@@ -7,7 +7,7 @@ import ResultPanel from '../components/ResultPanel.vue'
 import IdleCard from '../components/IdleCard.vue'
 
 const { config } = useConfig()
-const job = useJob()
+const job = useJob('operate')
 
 const op = ref<'extend' | 'remix' | 'edit'>('extend')
 const sourceId = ref('')
@@ -31,13 +31,15 @@ const hint = computed(
 )
 
 function submit() {
-  job.start(() =>
-    postJson('/api/operate', {
-      op: op.value,
-      source_id: sourceId.value,
-      prompt: prompt.value,
-      seconds: seconds.value,
-    }),
+  job.start(
+    () =>
+      postJson('/api/operate', {
+        op: op.value,
+        source_id: sourceId.value,
+        prompt: prompt.value,
+        seconds: seconds.value,
+      }),
+    `${op.value} · ${sourceId.value.trim()}`,
   )
 }
 </script>

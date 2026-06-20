@@ -7,7 +7,6 @@ SPA in ``frontend/``:
   * GET  /api/outputs           — finished clips in output/ (newest first)
   * POST /api/generate          — text-/image-to-video (multipart, optional image)
   * POST /api/operate           — extend / remix / edit a clip by id (JSON)
-  * POST /api/long-form         — chain extensions into a long take (JSON)
   * POST /api/characters        — build a reusable character from a clip (multipart)
   * POST /api/upscale           — Real-ESRGAN super-resolution (multipart)
   * GET  /api/jobs/{id}         — job snapshot (polling fallback)
@@ -58,14 +57,13 @@ from modules.sora_client import (
     create_character,
     edit_video,
     extend_video,
-    extend_video_loop,
     generate_video,
     remix_video,
 )
 from modules.upscale_client import modal_configured, upscale_video
 from modules.utils import ensure_dir, safe_slug
 from server.jobs import JobManager
-from server.schemas import LongFormRequest, OperateRequest
+from server.schemas import OperateRequest
 
 
 configure_logging()
@@ -299,73 +297,6 @@ def operate(req: OperateRequest) -> dict:
             "video_url": _url_for(result.video_path),
             "video_id": result.video_id,
             "message": f"{req.op} → {out.name} · new video id {result.video_id}",
-        }
-
-    job = jobs.create()
-    jobs.run(job, task)
-    return {"job_id": job.id}
-
-
-@app.post("/api/long-form")
-def long_form(req: LongFormRequest) -> dict:
-    _require_key()
-    if not req.source_id.strip():
-        raise HTTPException(400, "Enter a source video id.")
-    if not req.prompt.strip():
-        raise HTTPException(400, "Enter a prompt.")
-    if not ffmpeg_available():
-        raise HTTPException(
-            400, "Long form generation requires ffmpeg to concatenate clips."
-        )
-    if req.auto_upscale and not modal_configured():
-        raise HTTPException(
-            400,
-            "Modal isn't set up for upscaling. Disable Auto-upscale or run `uv run modal setup`.",
-        )
-
-    source_id = req.source_id.strip()
-    target_seconds = int(req.target_seconds)
-    spec = SoraSpec()
-
-    def task(on_progress):
-        ensure_dir(OUTPUT_DIR)
-        ensure_dir(TMP_DIR)
-        out = (
-            OUTPUT_DIR
-            / f"long_{source_id[:8]}_{target_seconds}s_{safe_slug(req.prompt, max_length=24)}.mp4"
-        )
-        result = extend_video_loop(
-            source_video_id=source_id,
-            prompt=req.prompt,
-            target_seconds=target_seconds,
-            output_path=out,
-            spec=spec,
-            tmp_dir=TMP_DIR,
-            on_progress=on_progress,
-        )
-
-        final_video = result.video_path
-        message = (
-            f"Long form complete → {out.name} · final segment id {result.video_id}"
-        )
-
-        if req.auto_upscale:
-            upscale_out = OUTPUT_DIR / f"{out.stem}_2x.mp4"
-            on_progress("Upscaling final video (2x)…", 99)
-            upscale_video(
-                final_video,
-                upscale_out,
-                model="realesr-general-x4v3",
-                outscale=2.0,
-                on_progress=on_progress,
-            )
-            final_video = upscale_out
-            message = f"Long form + Upscaled (2x) → {upscale_out.name}"
-
-        return {
-            "video_url": _url_for(final_video),
-            "video_id": result.video_id,
-            "message": message,
         }
 
     job = jobs.create()

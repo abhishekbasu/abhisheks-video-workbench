@@ -7,7 +7,7 @@ import ResultPanel from '../components/ResultPanel.vue'
 import IdleCard from '../components/IdleCard.vue'
 
 const { config } = useConfig()
-const job = useJob()
+const job = useJob('generate')
 
 const prompt = ref('')
 const model = ref('sora-2')
@@ -56,7 +56,7 @@ function submit() {
   form.set('mute', String(mute.value && ffmpeg.value))
   form.set('clean', String(clean.value))
   if (imageFile.value) form.set('image', imageFile.value)
-  job.start(() => postForm('/api/generate', form))
+  job.start(() => postForm('/api/generate', form), prompt.value.trim())
 }
 </script>
 
