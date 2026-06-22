@@ -31,8 +31,17 @@ defineProps<{
     </div>
 
     <!-- video result -->
-    <div v-else-if="result" class="rise">
-      <video v-if="result.video_url" :src="result.video_url" controls autoplay loop muted playsinline></video>
+    <div v-else-if="result" class="rise" :key="result.video_url || result.video_id || 'r'">
+      <video
+        v-if="result.video_url"
+        :key="result.video_url"
+        :src="result.video_url"
+        controls
+        autoplay
+        loop
+        muted
+        playsinline
+      ></video>
       <p v-if="result.message" class="statusline">✦ {{ result.message }}</p>
 
       <CopyChip v-if="result.video_id" label="video id" :value="result.video_id" />

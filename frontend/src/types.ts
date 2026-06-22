@@ -10,6 +10,7 @@ export interface AppConfig {
   upscale_models: { name: string; desc: string }[]
   default_upscale_model: string
   upscale_scales: number[]
+  corners: string[]
   capabilities: Capabilities
 }
 
@@ -41,7 +42,7 @@ export interface JobSnapshot {
   version: number
 }
 
-export type JobKind = 'generate' | 'operate' | 'characters' | 'upscale'
+export type JobKind = 'generate' | 'operate' | 'characters' | 'upscale' | 'brand'
 
 // 'expired' = the server no longer knows this job (e.g. it was restarted) and we
 // have no cached result. Persisted to localStorage so jobs survive a reload.

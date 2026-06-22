@@ -52,7 +52,7 @@ from config import (
 )
 from modules.image_prep import prepare_input_image
 from modules.logging_setup import configure_logging
-from modules.postprocess import ffmpeg_available, strip_audio
+from modules.postprocess import CORNERS, ffmpeg_available, overlay_logo, strip_audio
 from modules.sora_client import (
     create_character,
     edit_video,
@@ -152,6 +152,7 @@ def get_config() -> dict:
         ],
         "default_upscale_model": DEFAULT_UPSCALE.model,
         "upscale_scales": [2, 3, 4],
+        "corners": list(CORNERS),
         "capabilities": {
             "ffmpeg": ffmpeg_available(),
             "modal": modal_configured(),
@@ -362,6 +363,52 @@ async def upscale(
         return {
             "video_url": _url_for(dst),
             "message": f"Upscaled {src.name} → {dst.name} · {model} · {outscale:g}x",
+        }
+
+    job = jobs.create()
+    jobs.run(job, task)
+    return {"job_id": job.id}
+
+
+@app.post("/api/brand")
+async def brand(
+    logo: UploadFile = File(...),
+    corner: str = Form("bottom-right"),
+    opacity: float = Form(0.9),
+    size: float = Form(0.18),
+    source_name: str = Form(""),
+    upload: Optional[UploadFile] = File(None),
+) -> dict:
+    if corner not in CORNERS:
+        raise HTTPException(400, f"corner must be one of {', '.join(CORNERS)}.")
+    if not ffmpeg_available():
+        raise HTTPException(
+            400, "Overlaying a logo needs ffmpeg on PATH (brew install ffmpeg)."
+        )
+
+    if upload is not None:
+        src = await _save_upload(upload)
+    elif source_name.strip():
+        # Constrain to a file in output/ — never trust a client-supplied path.
+        src = OUTPUT_DIR / Path(source_name).name
+    else:
+        raise HTTPException(400, "Pick a clip from output/ or upload a video.")
+    if not src.exists():
+        raise HTTPException(400, f"File not found: {src.name}.")
+
+    logo_path = await _save_upload(logo)
+
+    def task(on_progress):
+        ensure_dir(OUTPUT_DIR)
+        dst = OUTPUT_DIR / f"{src.stem}_branded.mp4"
+        on_progress("Overlaying logo (ffmpeg)…", 20)
+        overlay_logo(
+            src, logo_path, dst,
+            corner=corner, opacity=opacity, scale=size,
+        )
+        return {
+            "video_url": _url_for(dst),
+            "message": f"Branded {src.name} → {dst.name} · {corner}",
         }
 
     job = jobs.create()

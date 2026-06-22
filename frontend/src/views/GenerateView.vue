@@ -130,7 +130,7 @@ function submit() {
       <div class="row">
         <label class="check" :class="{ checked: mute && ffmpeg, disabled: !ffmpeg }">
           <input type="checkbox" v-model="mute" :disabled="!ffmpeg" />
-          <span class="box"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="#0c0f06" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="box"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="#1c0d06" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span>
             <span class="ctitle">Mute output</span>
             <span class="cdesc">{{ ffmpeg ? 'Strip the audio track' : 'Needs ffmpeg on PATH' }}</span>
@@ -138,7 +138,7 @@ function submit() {
         </label>
         <label class="check" :class="{ checked: clean }">
           <input type="checkbox" v-model="clean" />
-          <span class="box"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="#0c0f06" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="box"><svg width="11" height="11" viewBox="0 0 12 12"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="#1c0d06" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <span>
             <span class="ctitle">Force fresh</span>
             <span class="cdesc">Ignore the resume cache</span>

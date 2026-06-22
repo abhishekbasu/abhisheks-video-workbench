@@ -15,6 +15,7 @@ const KIND_BADGE: Record<JobKind, string> = {
   operate: 'EDIT',
   characters: 'CHAR',
   upscale: 'UP',
+  brand: 'BRND',
 }
 
 function relTime(ms: number): string {

@@ -46,7 +46,16 @@ function find(id: string): JobEntry | undefined {
 
 function applySnap(entry: JobEntry, snap: JobSnapshot) {
   entry.status = snap.status
-  entry.progress = snap.progress
+  // The upstream Sora % can wobble (and even drop to 0 mid-render), which made
+  // the bar jump backwards. Clamp it monotonic within a job: only ever move
+  // forward while running, and snap to 100 once done. A fresh run is always a
+  // new entry starting at 0, so this never traps an old value.
+  if (typeof snap.progress === 'number') {
+    if (snap.status === 'done') entry.progress = 100
+    else if (snap.status === 'running' || snap.status === 'queued')
+      entry.progress = Math.max(entry.progress, snap.progress)
+    else entry.progress = snap.progress
+  }
   if (snap.stage) entry.stage = snap.stage
   if (snap.result) entry.result = snap.result
   if (snap.error) entry.error = snap.error
@@ -113,10 +122,13 @@ function track(kind: JobKind, label: string, id: string): JobEntry {
   }
   jobs.value.unshift(entry)
   if (jobs.value.length > MAX) jobs.value.length = MAX
-  selected.value[kind] = id
+  selected.value = { ...selected.value, [kind]: id }
   persist()
-  connect(entry)
-  return entry
+  // Connect the REACTIVE proxy from the array (not the raw `entry`), so the SSE
+  // updates that mutate it actually trigger Vue re-renders.
+  const tracked = jobs.value.find((j) => j.id === id) ?? entry
+  connect(tracked)
+  return tracked
 }
 
 /** Record a failure that happened before a job id was issued (e.g. a 400). */
@@ -150,7 +162,8 @@ function activeFor(kind: JobKind) {
 }
 
 function select(kind: JobKind, id: string) {
-  selected.value[kind] = id
+  // Replace the object so the change is unambiguously reactive.
+  selected.value = { ...selected.value, [kind]: id }
 }
 
 function remove(id: string) {

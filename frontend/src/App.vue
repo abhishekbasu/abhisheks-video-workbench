@@ -9,6 +9,7 @@ import GenerateView from './views/GenerateView.vue'
 import OperateView from './views/OperateView.vue'
 import CharactersView from './views/CharactersView.vue'
 import UpscaleView from './views/UpscaleView.vue'
+import BrandView from './views/BrandView.vue'
 import type { JobKind } from './types'
 
 const { loadError } = useConfig()
@@ -19,6 +20,7 @@ const tabs = [
   { id: 'operate', label: 'Extend · Remix · Edit' },
   { id: 'characters', label: 'Characters' },
   { id: 'upscale', label: 'Upscale' },
+  { id: 'brand', label: 'Branding' },
 ]
 
 const views: Record<string, any> = {
@@ -26,6 +28,7 @@ const views: Record<string, any> = {
   operate: OperateView,
   characters: CharactersView,
   upscale: UpscaleView,
+  brand: BrandView,
 }
 
 const active = ref('generate')
