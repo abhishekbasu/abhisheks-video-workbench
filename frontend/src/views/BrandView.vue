@@ -18,6 +18,7 @@ const uploadPreview = ref<string | null>(null)
 
 const logoFile = ref<File | null>(null)
 const logoPreview = ref<string | null>(null)
+const logoError = ref<string | null>(null)
 
 const corner = ref('bottom-right')
 const opacity = ref(0.9)
@@ -55,15 +56,80 @@ function clearUpload() {
   uploadPreview.value = null
 }
 
-function onLogo(e: Event) {
+// Rasterize an SVG logo to a transparent PNG in the browser. Neither Pillow nor
+// a stock ffmpeg build can decode SVG, so the backend would reject it; the
+// browser is a perfect SVG renderer, so we hand the server a ready PNG instead.
+async function rasterizeSvg(file: File): Promise<File> {
+  const text = await file.text()
+  // Pull the intrinsic aspect ratio from viewBox (preferred) or width/height.
+  const svg = new DOMParser().parseFromString(text, 'image/svg+xml').querySelector('svg')
+  let w = 0
+  let h = 0
+  const vb = svg?.getAttribute('viewBox')
+  if (vb) {
+    const p = vb.trim().split(/[\s,]+/).map(Number)
+    if (p.length === 4 && p[2] > 0 && p[3] > 0) [, , w, h] = p
+  }
+  if (!w || !h) {
+    const aw = parseFloat(svg?.getAttribute('width') || '')
+    const ah = parseFloat(svg?.getAttribute('height') || '')
+    if (aw > 0 && ah > 0) {
+      w = aw
+      h = ah
+    }
+  }
+  if (!w || !h) {
+    w = 512
+    h = 512
+  }
+  // Rasterize crisply (cap the long side); ffmpeg downsizes to the real target.
+  const scale = 1024 / Math.max(w, h)
+  const tw = Math.max(1, Math.round(w * scale))
+  const th = Math.max(1, Math.round(h * scale))
+
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.decoding = 'async'
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('could not render SVG'))
+      img.src = url
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = tw
+    canvas.height = th
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('canvas unavailable')
+    ctx.drawImage(img, 0, 0, tw, th) // no background fill — alpha is preserved
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'))
+    if (!blob) throw new Error('could not encode PNG')
+    return new File([blob], file.name.replace(/\.svg$/i, '') + '.png', { type: 'image/png' })
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+async function onLogo(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
-  logoFile.value = file
+  logoError.value = null
+  let logo = file
+  if (file.type === 'image/svg+xml' || /\.svg$/i.test(file.name)) {
+    try {
+      logo = await rasterizeSvg(file)
+    } catch {
+      logoError.value = 'Could not convert that SVG. Export it as a PNG and try again.'
+      return
+    }
+  }
+  logoFile.value = logo
   if (logoPreview.value) URL.revokeObjectURL(logoPreview.value)
-  logoPreview.value = URL.createObjectURL(file)
+  logoPreview.value = URL.createObjectURL(file) // preview the original (renders crisply)
 }
 function clearLogo() {
   logoFile.value = null
+  logoError.value = null
   if (logoPreview.value) URL.revokeObjectURL(logoPreview.value)
   logoPreview.value = null
 }
@@ -101,6 +167,7 @@ function submit() {
           <img :src="logoPreview" alt="logo preview" />
           <button class="clear" @click="clearLogo">remove</button>
         </div>
+        <p class="help err" v-if="logoError">{{ logoError }}</p>
       </div>
 
       <div class="section">Video</div>

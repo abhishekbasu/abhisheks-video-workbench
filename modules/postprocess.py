@@ -97,6 +97,12 @@ def overlay_logo(
         raise PostProcessError(f"Video not found: {src}")
     if not logo.exists():
         raise PostProcessError(f"Logo not found: {logo}")
+    if logo.suffix.lower() == ".svg":
+        # Neither Pillow nor a stock ffmpeg build can decode SVG. The web UI
+        # rasterizes SVGs to PNG before upload; direct API callers must do the same.
+        raise PostProcessError(
+            f"Can't overlay an SVG logo ({logo.name}) — rasterize it to a PNG first."
+        )
     if corner not in CORNERS:
         raise PostProcessError(f"corner must be one of {', '.join(CORNERS)} (got {corner!r}).")
 

@@ -351,6 +351,9 @@ a:hover {
   margin: 6px 0 0;
   line-height: 1.5;
 }
+.help.err {
+  color: #ffb3a8;
+}
 
 input[type='text'],
 textarea,
