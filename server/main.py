@@ -54,6 +54,7 @@ from modules.image_prep import prepare_input_image
 from modules.logging_setup import configure_logging
 from modules.postprocess import CORNERS, ffmpeg_available, overlay_logo, strip_audio
 from modules.sora_client import (
+    SoraResult,
     create_character,
     edit_video,
     extend_video,
@@ -61,7 +62,7 @@ from modules.sora_client import (
     remix_video,
 )
 from modules.upscale_client import modal_configured, upscale_video
-from modules.utils import ensure_dir, safe_slug
+from modules.utils import ensure_dir
 from server.jobs import JobManager
 from server.schemas import OperateRequest
 
@@ -134,6 +135,35 @@ def _url_for(path: Optional[Path]) -> Optional[str]:
             continue
         return f"{prefix}/{rel.as_posix()}"
     return None
+
+
+def _publish(result: SoraResult, *, mute: bool = False) -> SoraResult:
+    """Copy a finished Sora clip into output/, named by its video id.
+
+    Sora's own id (e.g. ``video_6a42136c…``) is unique and is exactly the handle
+    the Operate tab takes, so it beats the prompt slug as a filename — the slug
+    silently overwrites a prior clip whenever a prompt is reused. The thumbnail
+    and spritesheet are renamed to match (so output/ stays self-contained); the
+    raw download lives in tmp/ and gets overwritten by the next job. ``mute``
+    strips audio via ffmpeg instead of a plain copy. Returns a result whose paths
+    point at the published files (for building the response URLs).
+    """
+    ensure_dir(OUTPUT_DIR)
+    stem = result.video_id or f"video_{uuid.uuid4().hex}"
+    final = OUTPUT_DIR / f"{stem}.mp4"
+    if mute:
+        strip_audio(result.video_path, final)
+    else:
+        shutil.copy2(result.video_path, final)
+
+    thumb = sprite = None
+    if result.thumbnail_path and result.thumbnail_path.exists():
+        thumb = final.with_suffix(".webp")
+        shutil.copy2(result.thumbnail_path, thumb)
+    if result.spritesheet_path and result.spritesheet_path.exists():
+        sprite = final.with_suffix(".jpg")
+        shutil.copy2(result.spritesheet_path, sprite)
+    return SoraResult(result.video_id, final, thumb, sprite)
 
 
 # ────────────────────────────────────────────────────────────────────────────
@@ -230,18 +260,14 @@ async def generate(
             on_progress=on_progress,
         )
 
-        final = OUTPUT_DIR / f"{safe_slug(prompt)}.mp4"
-        if mute:
-            strip_audio(result.video_path, final)
-        else:
-            shutil.copy2(result.video_path, final)
+        published = _publish(result, mute=mute)
 
         return {
-            "video_url": _url_for(final),
-            "thumb_url": _url_for(result.thumbnail_path),
-            "sprite_url": _url_for(result.spritesheet_path),
-            "video_id": result.video_id,
-            "message": f"Saved {final.name} · video id {result.video_id}"
+            "video_url": _url_for(published.video_path),
+            "thumb_url": _url_for(published.thumbnail_path),
+            "sprite_url": _url_for(published.spritesheet_path),
+            "video_id": published.video_id,
+            "message": f"Saved {published.video_path.name} · video id {published.video_id}"
             + (" · muted" if mute else ""),
         }
 
@@ -264,17 +290,16 @@ def operate(req: OperateRequest) -> dict:
     spec = SoraSpec()  # only the poll interval/timeout matter here
 
     def task(on_progress):
-        ensure_dir(OUTPUT_DIR)
-        out = (
-            OUTPUT_DIR
-            / f"{req.op}_{source_id[:14]}_{safe_slug(req.prompt, max_length=24)}.mp4"
-        )
+        # The new clip's id isn't known until the op finishes, so download to a
+        # scratch file first, then publish into output/ named by that new id.
+        ensure_dir(TMP_DIR)
+        raw = TMP_DIR / f"{req.op}_raw.mp4"
         if req.op == "extend":
             result = extend_video(
                 video_id=source_id,
                 prompt=req.prompt,
                 seconds=req.seconds,
-                output_path=out,
+                output_path=raw,
                 spec=spec,
                 on_progress=on_progress,
             )
@@ -282,7 +307,7 @@ def operate(req: OperateRequest) -> dict:
             result = remix_video(
                 video_id=source_id,
                 prompt=req.prompt,
-                output_path=out,
+                output_path=raw,
                 spec=spec,
                 on_progress=on_progress,
             )
@@ -290,14 +315,17 @@ def operate(req: OperateRequest) -> dict:
             result = edit_video(
                 video_id=source_id,
                 prompt=req.prompt,
-                output_path=out,
+                output_path=raw,
                 spec=spec,
                 on_progress=on_progress,
             )
+        published = _publish(result)
         return {
-            "video_url": _url_for(result.video_path),
-            "video_id": result.video_id,
-            "message": f"{req.op} → {out.name} · new video id {result.video_id}",
+            "video_url": _url_for(published.video_path),
+            "thumb_url": _url_for(published.thumbnail_path),
+            "sprite_url": _url_for(published.spritesheet_path),
+            "video_id": published.video_id,
+            "message": f"{req.op} → {published.video_path.name} · new video id {published.video_id}",
         }
 
     job = jobs.create()

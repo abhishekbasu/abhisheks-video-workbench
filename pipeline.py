@@ -116,7 +116,9 @@ def _finalize(
     result: SoraResult, *, prompt: str, config: PipelineConfig, mute: bool
 ) -> Path:
     """Place the final mp4 (muted or copied) in output/, alongside thumb/spritesheet."""
-    stem = safe_slug(prompt)
+    # Name by Sora's video id (unique, and the handle remix/extend/edit take);
+    # fall back to the prompt slug only if the id is somehow missing.
+    stem = result.video_id or safe_slug(prompt)
     final_path = config.output_dir / f"{stem}.mp4"
     if mute:
         strip_audio(result.video_path, final_path)
