@@ -80,7 +80,9 @@
 
 /* light-mode fixups for spots with hard-coded dark values */
 :root[data-theme='light'] .wordmark {
-  background: linear-gradient(150deg, #2c1d14 0%, #6b4a34 70%, #8a6248 100%);
+  /* only the image — using the `background` shorthand would reset
+     background-clip back to border-box and break the text clip */
+  background-image: linear-gradient(150deg, #2a1913 0%, #7a3b23 62%, var(--acc) 100%);
 }
 :root[data-theme='light'] .panel {
   background: linear-gradient(180deg, var(--bg-1), #fbf6f1);
