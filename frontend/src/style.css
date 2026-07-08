@@ -46,6 +46,55 @@
   --shadow: 0 24px 64px -30px rgba(0, 0, 0, 0.82);
   --shadow-soft: 0 10px 34px -18px rgba(0, 0, 0, 0.6);
   --ring: 0 0 0 3px var(--acc-wash);
+
+  color-scheme: dark;
+}
+
+/* ── light mode — "warm paper" ─────────────────────────────────────────────
+   Same coral→amber sunset accent on a warm off-white canvas. Values mirror the
+   dark set variable-for-variable so every component re-tints automatically. */
+:root[data-theme='light'] {
+  --bg-0: #faf6f2; /* page */
+  --bg-1: #ffffff; /* panels */
+  --bg-2: #f4ede6; /* inputs / raised */
+  --bg-3: #ebe0d6; /* hover / selected */
+
+  --line: #e6dacd;
+  --line-soft: #f0e7dd;
+  --line-strong: #d3c3b3;
+
+  --ink: #241a13;
+  --ink-mid: #5c4f44;
+  --ink-dim: #8a7a6b;
+  --ink-faint: #b3a597;
+
+  --acc-glow: rgba(255, 111, 67, 0.18);
+  --acc-line: rgba(255, 111, 67, 0.5);
+  --acc-wash: rgba(255, 111, 67, 0.1);
+
+  --shadow: 0 24px 60px -30px rgba(74, 46, 26, 0.32);
+  --shadow-soft: 0 10px 30px -18px rgba(74, 46, 26, 0.24);
+
+  color-scheme: light;
+}
+
+/* light-mode fixups for spots with hard-coded dark values */
+:root[data-theme='light'] .wordmark {
+  background: linear-gradient(150deg, #2c1d14 0%, #6b4a34 70%, #8a6248 100%);
+}
+:root[data-theme='light'] .panel {
+  background: linear-gradient(180deg, var(--bg-1), #fbf6f1);
+}
+:root[data-theme='light'] body::after {
+  opacity: 0.02;
+}
+:root[data-theme='light'] input[type='range']::-webkit-slider-thumb,
+:root[data-theme='light'] input[type='range']::-moz-range-thumb {
+  border-color: #fff;
+}
+
+html {
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 * {
@@ -970,6 +1019,29 @@ input[type='range']::-moz-range-thumb {
   flex-direction: column;
   align-items: flex-end;
   gap: 12px;
+}
+.masthead-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--ink-mid);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+.icon-btn:hover {
+  color: var(--acc);
+  border-color: var(--line-strong);
+  background: var(--bg-2);
 }
 .jobs-btn {
   display: inline-flex;
