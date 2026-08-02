@@ -36,6 +36,40 @@ const views: Record<string, any> = {
 const active = ref('generate')
 const activeView = computed(() => views[active.value])
 
+const workspace = computed(
+  () =>
+    ({
+      generate: {
+        label: 'Generation',
+        title: 'Create a video',
+        detail: 'Configure a model, duration, format, and optional reference image.',
+      },
+      operate: {
+        label: 'Editing',
+        title: 'Extend, remix, or edit a video',
+        detail: 'Select an operation and provide the source video ID and instructions.',
+      },
+      characters: {
+        label: 'Characters',
+        title: 'Create a reusable character',
+        detail: 'Use a short reference clip to generate a character ID for future videos.',
+      },
+      upscale: {
+        label: 'Upscaling',
+        title: 'Increase output resolution',
+        detail: 'Send a completed video through the GPU upscaling workflow.',
+      },
+      brand: {
+        label: 'Branding',
+        title: 'Add a visual identifier',
+        detail: 'Apply a logo to a completed video before delivery.',
+      },
+    })[active.value] ?? {
+      label: 'Studio',
+      title: 'Select a production tool',
+      detail: 'Generate, edit, and finish videos from one workspace.',
+    },
+)
 const drawerOpen = ref(false)
 
 function openJob({ kind, id }: { kind: JobKind; id: string }) {
@@ -50,12 +84,9 @@ function openJob({ kind, id }: { kind: JobKind; id: string }) {
   <div class="shell">
     <header class="masthead">
       <div class="brand">
-        <span class="kicker"><span class="dot"></span>OpenAI Videos API · Sora</span>
-        <h1 class="wordmark">Sora&nbsp;Studio <em>/ prompt → video</em></h1>
+        <h1 class="wordmark">Sora Studio <em>Video production workspace</em></h1>
         <p class="lede">
-          A focused control surface for generating, extending, remixing and editing short Sora
-          clips — with reusable characters and GPU upscaling. Generation is paid and async; a clip
-          usually takes a few minutes (longer for <code>sora-2-pro</code>).
+          Generate, iterate, and finish short Sora videos from one focused workspace.
         </p>
       </div>
       <div class="masthead-right">
@@ -90,6 +121,18 @@ function openJob({ kind, id }: { kind: JobKind; id: string }) {
     </div>
 
     <TabNav :tabs="tabs" :active="active" @select="(id) => (active = id)" />
+
+    <section class="workspace-intro" aria-live="polite">
+      <div class="workspace-index">{{ workspace.label }}</div>
+      <div>
+        <h2>{{ workspace.title }}</h2>
+        <p>{{ workspace.detail }}</p>
+      </div>
+      <div class="workspace-state">
+        <span class="state-orb" :class="{ busy: store.activeCount.value > 0 }"></span>
+        {{ store.activeCount.value > 0 ? `${store.activeCount.value} rendering` : 'Ready for direction' }}
+      </div>
+    </section>
 
     <keep-alive>
       <component :is="activeView" :key="active" />
